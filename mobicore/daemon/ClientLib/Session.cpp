@@ -64,14 +64,11 @@ Session::~Session(void)
             ++iterator) {
         pBlkBufDescr = *iterator;
 
-        LOG_I("removeBulkBuf - Physical Address of L2 Table = 0x%X, handle= %d",
-              (unsigned int)pBlkBufDescr->physAddrWsmL2,
-              pBlkBufDescr->handle);
-
+        
         // ignore any error, as we cannot do anything in this case.
         int ret = mcKMod->unregisterWsmL2(pBlkBufDescr->handle);
         if (ret != 0) {
-            LOG_E("removeBulkBuf(): mcKModUnregisterWsmL2 failed: %d", ret);
+            
         }
 
         //iterator = bulkBufferDescriptors.erase(iterator);
@@ -117,7 +114,7 @@ mcResult_t Session::addBulkBuf(addr_t buf, uint32_t len, BulkBufferDescriptor **
             iterator != bulkBufferDescriptors.end();
             ++iterator) {
         if ((*iterator)->virtAddr == buf) {
-            LOG_E("Cannot map a buffer to multiple locations in one Trustlet.");
+            
             return MC_DRV_ERR_BUFFER_ALREADY_MAPPED;
         }
     }
@@ -126,11 +123,11 @@ mcResult_t Session::addBulkBuf(addr_t buf, uint32_t len, BulkBufferDescriptor **
     mcResult_t ret = mcKMod->registerWsmL2(buf, len, 0, &handle, &pPhysWsmL2);
 
     if (ret != MC_DRV_OK) {
-        LOG_V(" mcKMod->registerWsmL2() failed with %x", ret);
+        
         return ret;
     }
 
-    LOG_V(" addBulkBuf - Handle of L2 Table = %u", handle);
+    
 
     // Create new descriptor - secure virtual virtual set to 0, unknown!
     *blkBuf = new BulkBufferDescriptor(buf, 0x0, len, handle, pPhysWsmL2);
@@ -144,7 +141,7 @@ mcResult_t Session::addBulkBuf(addr_t buf, uint32_t len, BulkBufferDescriptor **
 //------------------------------------------------------------------------------
 uint32_t Session::getBufHandle(addr_t sVirtAddr)
 {
-    LOG_V("getBufHandle(): Virtual Address = 0x%X", (unsigned int) virtAddr);
+    
 
     // Search and remove bulk buffer descriptor
     for ( bulkBufferDescrIterator_t iterator = bulkBufferDescriptors.begin();
@@ -162,7 +159,7 @@ mcResult_t Session::removeBulkBuf(addr_t virtAddr)
 {
     BulkBufferDescriptor  *pBlkBufDescr = NULL;
 
-    LOG_V("removeBulkBuf(): Virtual Address = 0x%X", (unsigned int) virtAddr);
+    
 
     // Search and remove bulk buffer descriptor
     for ( bulkBufferDescrIterator_t iterator = bulkBufferDescriptors.begin();
@@ -178,15 +175,15 @@ mcResult_t Session::removeBulkBuf(addr_t virtAddr)
     }
 
     if (pBlkBufDescr == NULL) {
-        LOG_E("%p not registered in session %d.", virtAddr, sessionId);
+        
         return MC_DRV_ERR_BLK_BUFF_NOT_FOUND;
     }
-    LOG_V("removeBulkBuf():handle=%u", pBlkBufDescr->handle);
+    
 
     // ignore any error, as we cannot do anything
     mcResult_t ret = mcKMod->unregisterWsmL2(pBlkBufDescr->handle);
     if (ret != MC_DRV_OK) {
-        LOG_E("mcKMod->unregisterWsmL2 failed: %x", ret);
+        
         return ret;
     }
 

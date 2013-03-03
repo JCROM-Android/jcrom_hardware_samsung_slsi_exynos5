@@ -65,10 +65,10 @@ Connection::Connection(int socketDescriptor, sockaddr_un *remote)
 //------------------------------------------------------------------------------
 Connection::~Connection(void)
 {
-    LOG_V(" closing Connection...");
+    
     if (socketDescriptor != -1)
         close(socketDescriptor);
-    LOG_I(" Socket connection closed.");
+    
 }
 
 
@@ -79,18 +79,18 @@ bool Connection::connect(const char *dest)
 
     assert(NULL != dest);
 
-    LOG_I(" Connecting to %s socket", dest);
+    
     remote.sun_family = AF_UNIX;
     strncpy(remote.sun_path, dest, sizeof(remote.sun_path) - 1);
     if ((socketDescriptor = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-        LOG_ERRNO("Can't open stream socket.");
+        
         return false;
     }
     len = strlen(remote.sun_path) + sizeof(remote.sun_family);
     // The Daemon socket is in the Abstract Domain(LINUX ONLY!)
     remote.sun_path[0] = 0;
     if (::connect(socketDescriptor, (struct sockaddr *) &remote, len) < 0) {
-        LOG_ERRNO("connect()");
+        
         return false;
     }
     return true;
@@ -128,13 +128,13 @@ size_t Connection::readData(void *buffer, uint32_t len, int32_t timeout)
 
     // check for read error
     if ((int)ret == -1) {
-        LOG_ERRNO("select");
+        
         return -1;
     }
 
     // Handle case of no descriptor ready
     if (0 == ret) {
-        LOG_W(" Timeout during select() / No more notifications.");
+        
         return -2;
     }
 
@@ -142,13 +142,13 @@ size_t Connection::readData(void *buffer, uint32_t len, int32_t timeout)
 
     // finally check if fd has been selected -> must socketDescriptor
     if (!FD_ISSET(socketDescriptor, &readfds)) {
-        LOG_ERRNO("no fd is set, select");
+        
         return ret;
     }
 
     ret = recv(socketDescriptor, buffer, len, MSG_DONTWAIT);
     if (ret == 0) {
-        LOG_V(" readData(): peer orderly closed connection.");
+        
     }
 
     return ret;
@@ -165,8 +165,8 @@ size_t Connection::writeData(void *buffer, uint32_t len)
 
     ret = send(socketDescriptor, buffer, len, 0);
     if (ret != len) {
-        LOG_ERRNO("could not send all data, because send");
-        LOG_E("ret = %d", ret);
+        
+        
         ret = -1;
     }
 
@@ -197,10 +197,10 @@ int Connection::waitData(int32_t timeout)
 
     // check for read error
     if ((int)ret == -1) {
-        LOG_ERRNO("select");
+        
         return ret;
     } else if (ret == 0) {
-        LOG_E("select() timed out");
+        
         return -1;
     }
 

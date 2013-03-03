@@ -57,10 +57,10 @@ mcResult_t CMcKMod::mapWsm(
     addr_t      *pPhysAddr)
 {
     int ret = 0;
-    LOG_V(" mapWsm(): len=%d", len);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
@@ -71,20 +71,19 @@ struct mc_ioctl_map mapParams = { len:
 
     ret = ioctl(fdKMod, MC_IO_MAP_WSM, &mapParams);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_MAP_WSM");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
     addr_t virtAddr = ::mmap(0, len, PROT_READ | PROT_WRITE, MAP_SHARED,
                              fdKMod, mapParams.phys_addr);
     if (virtAddr == MAP_FAILED) {
-        LOG_ERRNO("mmap");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
 
-    LOG_V(" mapped to %p, handle=%d, phys=%p ", virtAddr,
-          mapParams.handle, (addr_t) (mapParams.phys_addr));
+    
 
     if (pVirtAddr != NULL) {
         *pVirtAddr = virtAddr;
@@ -109,35 +108,33 @@ mcResult_t CMcKMod::mapMCI(
     addr_t      *pPhysAddr,
     bool        *pReuse)
 {
-    LOG_I("Mapping MCI: len=%d", len);
+    
     // mapping response data is in the buffer
 struct mc_ioctl_map mapParams = { len:
         len
     };
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     int ret = ioctl(fdKMod, MC_IO_MAP_MCI, &mapParams);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_MAP_MCI");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
     addr_t virtAddr = ::mmap(0, len, PROT_READ | PROT_WRITE, MAP_SHARED,
                              fdKMod, 0);
     if (virtAddr == MAP_FAILED) {
-        LOG_ERRNO("mmap");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
     mapParams.addr = (unsigned long)virtAddr;
     *pReuse = mapParams.reused;
 
-    LOG_V(" MCI mapped to %p, handle=%d, phys=%p, reused=%s",
-          (void *)mapParams.addr, mapParams.handle, (addr_t) (mapParams.phys_addr),
-          mapParams.reused ? "true" : "false");
+    
 
     if (pVirtAddr != NULL) {
         *pVirtAddr = (void *)mapParams.addr;
@@ -165,7 +162,7 @@ mcResult_t CMcKMod::mapPersistent(
     addr_t      *pPhysAddr)
 {
     // Not currently supported by the driver
-    LOG_E("MobiCore Driver does't support persistent buffers");
+    
     return MC_DRV_ERR_NOT_IMPLEMENTED;
 }
 
@@ -176,14 +173,12 @@ int CMcKMod::read(addr_t buffer, uint32_t len)
     int ret = 0;
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ::read(fdKMod, buffer, len);
-    if (ret == -1) {
-        LOG_ERRNO("read");
-    }
+
     return ret;
 }
 
@@ -226,9 +221,7 @@ mcp_length :
         mcpLength
     };
     ret = ioctl(fdKMod, MC_IO_INIT, &fcInitParams);
-    if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_INIT");
-    }
+
 
     return ret;
 }
@@ -239,7 +232,7 @@ int CMcKMod::fcInfo(uint32_t extInfoId, uint32_t *pState, uint32_t *pExtInfo)
     int ret = 0;
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
@@ -249,7 +242,7 @@ struct mc_ioctl_info fcInfoParams = {ext_info_id :
     };
     ret = ioctl(fdKMod, MC_IO_INFO, &fcInfoParams);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_INFO");
+       
         return ret;
     }
 
@@ -271,15 +264,12 @@ int CMcKMod::fcYield(void)
     int ret = 0;
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ioctl(fdKMod, MC_IO_YIELD, NULL);
-    if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_YIELD");
-        LOG_E("ret = %d", ret);
-    }
+
 
     return ret;
 }
@@ -291,15 +281,12 @@ int CMcKMod::fcNSIQ(void)
     int ret = 0;
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return  MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ioctl(fdKMod, MC_IO_NSIQ, NULL);
-    if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_NSIQ");
-        LOG_E("ret = %d", ret);
-    }
+
 
     return ret;
 }
@@ -308,22 +295,21 @@ int CMcKMod::fcNSIQ(void)
 //------------------------------------------------------------------------------
 mcResult_t CMcKMod::free(uint32_t handle, addr_t buffer, uint32_t len)
 {
-    LOG_V("free(): handle=%d", handle);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     // Even if unmap fails we still go on with our request
     if (::munmap(buffer, len)) {
-        LOG_I("buffer = %p, len = %d", buffer, len);
-        LOG_ERRNO("mmap failed");
+        
     }
 
     int ret = ioctl(fdKMod, MC_IO_FREE, handle);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_FREE");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
@@ -339,10 +325,10 @@ mcResult_t CMcKMod::registerWsmL2(
     uint32_t    *pHandle,
     addr_t      *pPhysWsmL2)
 {
-    LOG_I(" Registering virtual buffer at %p, len=%d as World Shared Memory", buffer, len);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
@@ -357,11 +343,11 @@ pid :
 
     int ret = ioctl(fdKMod, MC_IO_REG_WSM, &params);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_UNREG_WSM");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
-    LOG_I(" Registered, handle=%d, L2 phys=0x%x ", params.handle, params.table_phys);
+    
 
     if (pHandle != NULL) {
         *pHandle = params.handle;
@@ -378,16 +364,16 @@ pid :
 //------------------------------------------------------------------------------
 mcResult_t CMcKMod::unregisterWsmL2(uint32_t handle)
 {
-    LOG_I(" Unregistering World Shared Memory with handle %d", handle);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     int ret = ioctl(fdKMod, MC_IO_UNREG_WSM, handle);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_UNREG_WSM");
+       
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
@@ -399,17 +385,17 @@ mcResult_t CMcKMod::lockWsmL2(uint32_t handle)
 {
     int ret = 0;
 
-    LOG_I(" Locking World Shared Memory with handle %d", handle);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ioctl(fdKMod, MC_IO_LOCK_WSM, handle);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_UNREG_WSM");
-        LOG_E("ret = %d", ret);
+        
+        
     }
 
     return ret;
@@ -420,18 +406,16 @@ mcResult_t CMcKMod::unlockWsmL2(uint32_t handle)
 {
     int ret = 0;
 
-    LOG_I(" Unlocking World Shared Memory with handle %d", handle);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ioctl(fdKMod, MC_IO_UNLOCK_WSM, handle);
     // Failure here is not really important
-    if (ret != 0) {
-        LOG_I("ret = %d", ret);
-    }
+
 
     return ret;
 }
@@ -443,18 +427,14 @@ addr_t CMcKMod::findWsmL2(uint32_t handle)
     int ret = 0;
     uint32_t param = handle;
 
-    LOG_I(" Resolving the WSM l2 for handle=%u", handle);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return NULL;
     }
 
     ret = ioctl(fdKMod, MC_IO_RESOLVE_WSM, &param);
-    if (ret != 0 || param == 0) {
-        LOG_ERRNO("ioctl MC_IO_RESOLVE_WSM");
-        LOG_E("param %u, ret = %d", param, ret);
-    }
 
     return (addr_t)param;
 }
@@ -467,16 +447,16 @@ mcResult_t CMcKMod::findContiguousWsm(uint32_t handle, addr_t *phys, uint32_t *l
 
     wsm.handle = handle;
 
-    LOG_I(" Resolving the contiguous WSM l2 for handle=%u", handle);
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return NULL;
     }
 
     ret = ioctl(fdKMod, MC_IO_RESOLVE_CONT_WSM, &wsm);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_RESOLVE_CONT_WSM");
+        
     } else {
         *phys = (addr_t)wsm.phys;
         *len = wsm.length;
@@ -490,18 +470,15 @@ mcResult_t CMcKMod::cleanupWsmL2(void)
 {
     int ret = 0;
 
-    LOG_I(" Cleaning up the orphaned bulk buffers");
+    
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ioctl(fdKMod, MC_IO_CLEAN_WSM, 0);
-    if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_UNREG_WSM");
-        LOG_E("ret = %d", ret);
-    }
+
 
     return ret;
 }
@@ -518,14 +495,11 @@ length :
     };
 
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return MC_DRV_ERR_KMOD_NOT_OPEN;
     }
 
     ret = ioctl(fdKMod, MC_IO_EXECUTE, &params);
-    if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_EXECUTE");
-    }
 
     return ret;
 }
@@ -534,24 +508,23 @@ bool CMcKMod::checkVersion(void)
 {
     uint32_t version;
     if (!isOpen()) {
-        LOG_E("no connection to kmod");
+        
         return false;
     }
 
     int ret = ioctl(fdKMod, MC_IO_VERSION, &version);
     if (ret != 0) {
-        LOG_ERRNO("ioctl MC_IO_VERSION");
-        LOG_E("ret = %d", ret);
+        
         return false;
     }
 
     // Run-time check.
     char *errmsg;
     if (!checkVersionOkMCDRVMODULEAPI(version, &errmsg)) {
-        LOG_E("%s", errmsg);
+        
         return false;
     }
-    LOG_I("%s", errmsg);
+    
 
     return true;
 }

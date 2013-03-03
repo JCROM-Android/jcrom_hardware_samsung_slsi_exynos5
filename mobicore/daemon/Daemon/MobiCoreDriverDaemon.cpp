@@ -110,37 +110,37 @@ void MobiCoreDriverDaemon::run(
     void
 )
 {
-    LOG_I("Daemon starting up...");
-    LOG_I("Socket interface version is %u.%u", DAEMON_VERSION_MAJOR, DAEMON_VERSION_MINOR);
+    
+    
 #ifdef MOBICORE_COMPONENT_BUILD_TAG
-    LOG_I("%s", MOBICORE_COMPONENT_BUILD_TAG);
+    
 #else
 #warning "MOBICORE_COMPONENT_BUILD_TAG is not defined!"
 #endif
-    LOG_I("Build timestamp is %s %s", __DATE__, __TIME__);
+    
 
     int i;
 
     mobiCoreDevice = getDeviceInstance();
 
-    LOG_I("Daemon scheduler is %s", enableScheduler ? "enabled" : "disabled");
-    LOG_I("Initializing MobiCore Device");
+    
+    
     if (!mobiCoreDevice->initDevice(
                 "/dev/" MC_ADMIN_DEVNODE,
                 loadMobicore,
                 mobicoreImage.c_str(),
                 enableScheduler)) {
-        LOG_E("Could not initialize MobiCore!");
+        
         return;
     }
     mobiCoreDevice->start();
 
-    LOG_I("Checking version of MobiCore");
+    
     checkMobiCoreVersion(mobiCoreDevice);
 
     if (donateRamSize > 0) {
         // Donate additional RAM to MC
-        LOG_I("Donating %u Kbytes to Mobicore", donateRamSize / 1024);
+        
         mobiCoreDevice->donateRam(donateRamSize);
     }
 
@@ -150,7 +150,7 @@ void MobiCoreDriverDaemon::run(
         #define NUM_TRUSTLETS       4
         #define NUM_SESSIONS        (1 + NUM_DRIVERS + NUM_TRUSTLETS)
         for (i = 2; i < NUM_SESSIONS; i++) {
-            LOG_I("Closing session %i",i);
+            
             mobiCoreDevice->closeSession(i);
         }
     }
@@ -160,11 +160,11 @@ void MobiCoreDriverDaemon::run(
         loadDeviceDriver(driverPath);
     }
 
-    LOG_I("Creating socket servers");
+    
     // Start listening for incoming TLC connections
     servers[0] = new NetlinkServer(this);
     servers[1] = new Server(this, SOCK_PATH);
-    LOG_I("Successfully created servers");
+    
 
     // Start all the servers
     for (i = 0; i < MAX_SERVERS; i++) {
@@ -199,7 +199,7 @@ void MobiCoreDriverDaemon::dropConnection(
     MobiCoreDevice *device = (MobiCoreDevice *) (connection->connectionData);
 
     if (device != NULL) {
-        LOG_I("dropConnection(): closing still open device.");
+        
         // A connection has been found and has to be closed
         device->close(connection);
     }
@@ -212,9 +212,7 @@ size_t MobiCoreDriverDaemon::writeResult(
     mcResult_t  code
 )
 {
-    if (0 != code) {
-        LOG_V(" sending error code %d", code);
-    }
+
     return connection->writeData(&code, sizeof(mcResult_t));
 }
 
@@ -234,25 +232,23 @@ bool MobiCoreDriverDaemon::loadDeviceDriver(
         //mobiCoreDevice
         FILE *fs = fopen (driverPath.c_str(), "rb");
         if (!fs) {
-            LOG_E("%s: failed: cannot open %s", __FUNCTION__, driverPath.c_str());
+            
             break;
         }
         fclose(fs);
 
-        LOG_I("%s: loading %s", __FUNCTION__, driverPath.c_str());
+        
 
         regObj = mcRegistryGetDriverBlob(driverPath.c_str());
         if (regObj == NULL) {
             break;;
         }
 
-        LOG_I("registering L2 in kmod, p=%p, len=%i",
-              regObj->value, regObj->len);
-
+        
         pWsm = mobiCoreDevice->registerWsmL2(
                    (addr_t)(regObj->value), regObj->len, 0);
         if (pWsm == NULL) {
-            LOG_E("allocating WSM for Trustlet failed");
+            
             break;
         }
         // Initialize information data of open session command
@@ -266,7 +262,7 @@ bool MobiCoreDriverDaemon::loadDeviceDriver(
         tci = (uint8_t *)malloc(DRIVER_TCI_LEN);
         pTciWsm = mobiCoreDevice->allocateContiguousPersistentWsm(DRIVER_TCI_LEN);
         if (pTciWsm == NULL) {
-            LOG_E("allocating WSM TCI for Trustlet failed");
+            
             break;
         }
         cmdOpenSession.deviceId = MC_DEVICE_ID_DEFAULT;
@@ -291,7 +287,7 @@ bool MobiCoreDriverDaemon::loadDeviceDriver(
         regObj = NULL;
 
         if (mcRet != MC_MCP_RET_OK) {
-            LOG_E("open session error %d", mcRet);
+            
             break;
         }
 
@@ -299,7 +295,7 @@ bool MobiCoreDriverDaemon::loadDeviceDriver(
     } while (false);
     // Free all allocated resources
     if (ret == false) {
-        LOG_I("%s: Freeing previously allocated resources!", __FUNCTION__);
+        
         if (pWsm != NULL) {
             if (!mobiCoreDevice->unregisterWsmL2(pWsm)) {
                 // At least make sure we don't leak the WSM object
@@ -326,13 +322,11 @@ bool MobiCoreDriverDaemon::loadDeviceDriver(
     uint32_t payload_len = sizeof(*CMD_BUFFER) - sizeof(mcDrvCommandHeader_t); \
     uint32_t rlen = CONNECTION->readData(payload, payload_len); \
     if (rlen < 0) { \
-        LOG_E("reading from Client failed"); \
         /* it is questionable, if writing to broken socket has any effect here. */ \
         writeResult(CONNECTION, MC_DRV_ERR_DAEMON_SOCKET); \
         return; \
     } \
     if (rlen != payload_len) {\
-        LOG_E("wrong buffer length %i received from Client", rlen); \
         writeResult(CONNECTION, MC_DRV_ERR_DAEMON_SOCKET); \
         return; \
     } \
@@ -341,7 +335,6 @@ bool MobiCoreDriverDaemon::loadDeviceDriver(
 #define CHECK_DEVICE(DEVICE, CONNECTION) \
     if (DEVICE == NULL) \
     { \
-        LOG_V("%s: no device associated with connection",__FUNCTION__); \
         writeResult(CONNECTION, MC_DRV_ERR_DAEMON_DEVICE_NOT_OPEN); \
         return; \
     }
@@ -357,19 +350,19 @@ void MobiCoreDriverDaemon::processOpenDevice(
     // Check if device has been registered to the connection
     MobiCoreDevice *device = (MobiCoreDevice *) (connection->connectionData);
     if (NULL != device) {
-        LOG_E("processOpenDevice(): device already set");
+        
         writeResult(connection, MC_DRV_ERR_DEVICE_ALREADY_OPEN);
         return;
     }
 
-    LOG_I(" Opening deviceId %d ", cmdOpenDevice.deviceId);
+    
 
     // Get device for device ID
     device = getDevice(cmdOpenDevice.deviceId);
 
     // Check if a device for the given name has been found
     if (device == NULL) {
-        LOG_E("invalid deviceId");
+        
         writeResult(connection, MC_DRV_ERR_UNKNOWN_DEVICE);
         return;
     }
@@ -425,11 +418,11 @@ void MobiCoreDriverDaemon::processOpenSession(
         writeResult(connection, MC_DRV_ERR_TRUSTLET_NOT_FOUND);
         return;
     }
-    LOG_I(" Sharing Service loaded at %p with Secure World", (addr_t)(regObj->value));
+    
 
     CWsm_ptr pWsm = device->registerWsmL2((addr_t)(regObj->value), regObj->len, 0);
     if (pWsm == NULL) {
-        LOG_E("allocating WSM for Trustlet failed");
+        
         writeResult(connection, MC_DRV_ERR_DAEMON_KMOD_ERROR);
         return;
     }
@@ -448,7 +441,7 @@ void MobiCoreDriverDaemon::processOpenSession(
                          &(rspOpenSession.payload));
 
     // Unregister physical memory from kernel module.
-    LOG_I(" Service buffer was copied to Secure world and processed. Stop sharing of buffer.");
+    
 
     // This will also destroy the WSM object.
     if (!device->unregisterWsmL2(pWsm)) {
@@ -461,7 +454,7 @@ void MobiCoreDriverDaemon::processOpenSession(
     free(regObj);
 
     if (ret != MC_DRV_OK) {
-        LOG_E("Service could not be loaded.");
+        
         writeResult(connection, ret);
     } else {
         rspOpenSession.header.responseId = ret;
@@ -504,7 +497,7 @@ void MobiCoreDriverDaemon::processNqConnect(Connection *connection)
     // device must be empty since this is a new connection
     MobiCoreDevice *device = (MobiCoreDevice *)(connection->connectionData);
     if (device != NULL) {
-        LOG_E("device already set\n");
+        
         writeResult(connection, MC_DRV_ERR_NQ_FAILED);
         return;
     }
@@ -517,7 +510,7 @@ void MobiCoreDriverDaemon::processNqConnect(Connection *connection)
     device = getDevice(cmd.deviceId);
     // Check if a device for the given name has been found
     if (NULL == device) {
-        LOG_E("invalid deviceId");
+        
         writeResult(connection, MC_DRV_ERR_UNKNOWN_DEVICE);
         return;
     }
@@ -526,7 +519,7 @@ void MobiCoreDriverDaemon::processNqConnect(Connection *connection)
                               connection,
                               &cmd);
     if (!ts) {
-        LOG_E("registerTrustletConnection() failed!");
+        
         writeResult(connection, MC_DRV_ERR_UNKNOWN);
         return;
     }
@@ -549,14 +542,14 @@ void MobiCoreDriverDaemon::processNotify(
     uint32_t payload_len = sizeof(cmd) - sizeof(mcDrvCommandHeader_t);
     uint32_t rlen = connection->readData(payload, payload_len);
     if (rlen < 0) {
-        LOG_E("reading from Client failed");
+        
         /* it is questionable, if writing to broken socket has any effect here. */
         // NOTE: notify fails silently
         //writeResult(connection, MC_DRV_RSP_SOCKET_ERROR);
         return;
     }
     if (rlen != payload_len) {
-        LOG_E("wrong buffer length %i received from Client", rlen);
+        
         // NOTE: notify fails silently
         //writeResult(connection, MC_DRV_RSP_PAYLOAD_LENGTH_ERROR);
         return;
@@ -565,7 +558,7 @@ void MobiCoreDriverDaemon::processNotify(
     // Device required
     MobiCoreDevice *device = (MobiCoreDevice *) (connection->connectionData);
     if (NULL == device) {
-        LOG_V("%s: no device associated with connection", __FUNCTION__);
+        
         // NOTE: notify fails silently
         // writeResult(connection,MC_DRV_RSP_DEVICE_NOT_OPENED);
         return;
@@ -592,7 +585,7 @@ void MobiCoreDriverDaemon::processMapBulkBuf(Connection *connection)
     CHECK_DEVICE(device, connection);
 
     if (!device->lockWsmL2(cmd.handle)) {
-        LOG_E("Couldn't lock the buffer!");
+        
         writeResult(connection, MC_DRV_ERR_DAEMON_WSM_HANDLE_NOT_FOUND);
         return;
     }
@@ -601,7 +594,7 @@ void MobiCoreDriverDaemon::processMapBulkBuf(Connection *connection)
     uint32_t pAddrL2 = (uint32_t)device->findWsmL2(cmd.handle);
 
     if (pAddrL2 == 0) {
-        LOG_E("Failed to resolve WSM with handle %u", cmd.handle);
+        
         writeResult(connection, MC_DRV_ERR_DAEMON_WSM_HANDLE_NOT_FOUND);
         return;
     }
@@ -637,7 +630,7 @@ void MobiCoreDriverDaemon::processUnmapBulkBuf(Connection *connection)
     uint32_t mcResult = device->unmapBulk(cmd.sessionId, cmd.handle, cmd.secureVirtualAdr, cmd.lenBulkMem);
 
     if (mcResult != MC_DRV_OK) {
-        LOG_V("MCP UNMAP returned code %d", mcResult);
+        
         writeResult(connection, mcResult);
         return;
     }
@@ -680,7 +673,7 @@ void MobiCoreDriverDaemon::processGetMobiCoreVersion(
     mcResult_t mcResult = device->getMobiCoreVersion(&rspGetMobiCoreVersion.payload);
 
     if (mcResult != MC_DRV_OK) {
-        LOG_V("MC GET_MOBICORE_VERSION returned code %d", mcResult);
+        
         writeResult(connection, mcResult);
         return;
     }
@@ -707,7 +700,7 @@ bool MobiCoreDriverDaemon::handleConnection(
     }
 
     mutex.lock();
-    LOG_I("handleConnection()==== %p", connection);
+    
     do {
         // Read header
         mcDrvCommandHeader_t mcDrvCommandHeader;
@@ -716,19 +709,19 @@ bool MobiCoreDriverDaemon::handleConnection(
                            sizeof(mcDrvCommandHeader));
 
         if (rlen == 0) {
-            LOG_V(" handleConnection(): Connection closed.");
+            
             break;
         }
         if (rlen == -1) {
-            LOG_E("Socket error.");
+            
             break;
         }
         if (rlen == -2) {
-            LOG_E("Timeout.");
+            
             break;
         }
         if (rlen != sizeof(mcDrvCommandHeader)) {
-            LOG_E("Header length %i is not right.", (int)rlen);
+            
             break;
         }
         ret = true;
@@ -777,15 +770,13 @@ bool MobiCoreDriverDaemon::handleConnection(
             //-----------------------------------------
 
         default:
-            LOG_E("Unknown command: %d=0x%x",
-                  mcDrvCommandHeader.commandId,
-                  mcDrvCommandHeader.commandId);
+            
             ret = false;
             break;
         }
     } while (0);
     mutex.unlock();
-    LOG_I("handleConnection()<-------");
+    
 
     return ret;
 }
@@ -820,7 +811,7 @@ void terminateDaemon(
     int signum
 )
 {
-    LOG_E("Signal %d received\n", signum);
+  return;
 }
 
 //------------------------------------------------------------------------------
@@ -943,7 +934,7 @@ int main(
     delete mobiCoreDriverDaemon;
 
     // This should not happen
-    LOG_E("Exiting MobiCoreDaemon");
+   
 
     return EXIT_FAILURE;
 }
@@ -960,33 +951,33 @@ static void checkMobiCoreVersion(
     mcResult_t mcResult = mobiCoreDevice->getMobiCoreVersion(&versionPayload);
 
     if (mcResult != MC_DRV_OK) {
-        LOG_E("Failed to obtain MobiCore version info. MCP return code: %u", mcResult);
+       
         failed = true;
     } else {
-        LOG_I("Product ID is %s", versionPayload.versionInfo.productId);
+        
 
         // Check MobiCore version info.
         char *msg;
         if (!checkVersionOkMCI(versionPayload.versionInfo.versionMci, &msg)) {
-            LOG_E("%s", msg);
+            
             failed = true;
         }
-        LOG_I("%s", msg);
+        
         if (!checkVersionOkSO(versionPayload.versionInfo.versionSo, &msg)) {
-            LOG_E("%s", msg);
+            
             failed = true;
         }
-        LOG_I("%s", msg);
+        
         if (!checkVersionOkMCLF(versionPayload.versionInfo.versionMclf, &msg)) {
-            LOG_E("%s", msg);
+            
             failed = true;
         }
-        LOG_I("%s", msg);
+        
         if (!checkVersionOkCONTAINER(versionPayload.versionInfo.versionContainer, &msg)) {
-            LOG_E("%s", msg);
+            
             failed = true;
         }
-        LOG_I("%s", msg);
+        
     }
 
     if (failed) {

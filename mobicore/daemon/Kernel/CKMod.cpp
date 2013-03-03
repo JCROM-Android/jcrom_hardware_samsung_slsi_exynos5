@@ -67,16 +67,16 @@ bool CKMod::isOpen(void)
 mcResult_t CKMod::open(const char *deviceName)
 {
     if (isOpen()) {
-        LOG_W("already open");
+        
         return MC_DRV_ERR_DEVICE_ALREADY_OPEN;
     }
 
-    LOG_I(" Opening kernel module at %s.", deviceName);
+    
 
     // open return -1 on error, "errno" is set with details
     int openRet = ::open(deviceName, O_RDWR);
     if (openRet == -1) {
-        LOG_ERRNO("open");
+        
         return MAKE_MC_DRV_KMOD_WITH_ERRNO(errno);
     }
 
@@ -92,12 +92,12 @@ void CKMod::close(
 {
     if (isOpen()) {
         if (::close(fdKMod) != 0) {
-            LOG_ERRNO("close");
+            
         } else {
             fdKMod = INVALID_FILE_DESCRIPTOR;
         }
     } else {
-        LOG_W(" Kernel module device not open");
+        
     }
 }
 

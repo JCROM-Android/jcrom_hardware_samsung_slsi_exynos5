@@ -63,7 +63,7 @@ void NetlinkServer::run(
         // Open a socket
         serverSock = socket(PF_NETLINK, SOCK_DGRAM,  MC_DAEMON_NETLINK);
         if (serverSock < 0) {
-            LOG_ERRNO("Opening socket");
+            
             break;
         }
 
@@ -79,7 +79,7 @@ void NetlinkServer::run(
         src_addr.nl_pid = MC_DAEMON_PID;  /* daemon pid */
         src_addr.nl_groups = 0;  /* not in mcast groups */
         if (bind(serverSock, (struct sockaddr *)&src_addr, sizeof(src_addr)) < 0) {
-            LOG_ERRNO("Binding to server socket failed, because bind");
+            
             close(serverSock);
             break;
         }
@@ -103,7 +103,7 @@ void NetlinkServer::run(
             // Read the incomming message and route it to the connection based
             // on the incomming PID
             if ((len = recvmsg(serverSock, &msg, 0)) < 0) {
-                LOG_ERRNO("recvmsg");
+                
                 break;
             }
 
@@ -115,7 +115,7 @@ void NetlinkServer::run(
         }
     } while (false);
 
-    LOG_ERRNO("Exiting NetlinkServer! Because it");
+    
 }
 
 //------------------------------------------------------------------------------

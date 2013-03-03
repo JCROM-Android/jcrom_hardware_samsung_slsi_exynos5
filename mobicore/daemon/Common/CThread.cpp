@@ -105,8 +105,8 @@ void CThread::start(
 {
     int ret;
     ret = pthread_create(&m_thread, NULL, CThreadStartup, this);
-    if (0 != ret)
-        LOG_E("pthread_create failed with error code %d", ret);
+
+      
 }
 
 
@@ -117,8 +117,8 @@ void CThread::join(
 {
     int ret;
     ret = pthread_join(m_thread, NULL);
-    if (0 != ret)
-        LOG_E("pthread_join failed with error code %d", ret);
+
+        
 }
 
 

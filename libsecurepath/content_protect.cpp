@@ -35,7 +35,7 @@ static mcResult_t tlc_initialize(void) {
 
 	mcRet = tlc_open(&cp_ctx);
 	if (MC_DRV_OK != mcRet) {
-		   LOG_E("open TL session failed!");
+		   
 		   return mcRet;
 	}
 
@@ -51,7 +51,7 @@ static mcResult_t tlc_terminate(void) {
 	if (cp_ctx.initialized == true) {
 		mcRet = tlc_close(&cp_ctx);
 		if (MC_DRV_OK != mcRet) {
-			   LOG_E("close TL session failed!");
+			  
 			   return mcRet;
 		}
 
@@ -68,13 +68,13 @@ extern "C" cpResult_t CP_Enable_Path_Protection(uint32_t protect_ip)
 	mcResult_t mcRet;
 	tciMessage_t *tci = NULL;
 
-	LOG_I("[CONTENT_PROTECT] : CP_Enable_Path_Protection");
+	
 	do {
 		// -------------------------------------------------------------
 		// Step 1: Call the Trustlet Open function.
 		mcRet = tlc_initialize();
 		if (MC_DRV_OK != mcRet) {
-			LOG_E("Tlc Open Error");
+			
 			cp_result = CP_ERROR_ENABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -83,7 +83,7 @@ extern "C" cpResult_t CP_Enable_Path_Protection(uint32_t protect_ip)
 		// Step 2: Check TCI buffer.
 		tci = cp_ctx.tci_msg;
 		if (NULL == tci) {
-			LOG_E("TCI has not been set up properly - exiting");
+			
 			cp_result = CP_ERROR_ENABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -99,7 +99,7 @@ extern "C" cpResult_t CP_Enable_Path_Protection(uint32_t protect_ip)
 		// Step 3.2: Send Trustlet TCI Message
 		mcRet = tlc_communicate(&cp_ctx);
 		if (MC_DRV_OK != mcRet) {
-			LOG_E("Tlc Communicate Error");
+			
 			cp_result = CP_ERROR_ENABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -107,7 +107,7 @@ extern "C" cpResult_t CP_Enable_Path_Protection(uint32_t protect_ip)
 		// -------------------------------------------------------------
 		// Step 3.3: Verify that the Trustlet sent a response
 		if ((RSP_ID(CMD_WV_DRM_ENABLE_PATH_PROTECTION) != tci->resp.id)) {
-			LOG_E("Trustlet did not send a response: %d", tci->resp.id);
+			
 			cp_result = CP_ERROR_ENABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -115,14 +115,14 @@ extern "C" cpResult_t CP_Enable_Path_Protection(uint32_t protect_ip)
 		// -------------------------------------------------------------
 		// Step 3.4: Check the Trustlet return code
 		if (tci->resp.return_code != RET_TL_WV_DRM_OK) {
-			LOG_E("Trustlet did not send a valid return code: %d", tci->resp.return_code);
+			
 			cp_result = CP_ERROR_ENABLE_PATH_PROTECTION_FAILED;
 			break;
 		}		
 	} while(0);
 
 	tlc_terminate();
-	LOG_I("[CONTENT_PROTECT] : CP_Enable_Path_Protection. return value(%d)", cp_result);
+	
 	return cp_result;
 }
 
@@ -132,13 +132,13 @@ extern "C" cpResult_t CP_Disable_Path_Protection(uint32_t protect_ip)
 	mcResult_t mcRet;
 	tciMessage_t *tci = NULL;
 
-	LOG_I("[CONTENT_PROTECT] : CP_Disable_Path_Protection");
+	
 	do {
 		// -------------------------------------------------------------
 		// Step 1: Call the Trustlet Open function.
 		mcRet = tlc_initialize();
 		if (MC_DRV_OK != mcRet) {
-			LOG_E("Tlc Open Error");
+			
 			cp_result = CP_ERROR_DISABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -147,7 +147,7 @@ extern "C" cpResult_t CP_Disable_Path_Protection(uint32_t protect_ip)
 		// Step 2: Check TCI buffer.
 		tci = cp_ctx.tci_msg;
 		if (NULL == tci) {
-			LOG_E("TCI has not been set up properly - exiting");
+			
 			cp_result = CP_ERROR_DISABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -163,7 +163,7 @@ extern "C" cpResult_t CP_Disable_Path_Protection(uint32_t protect_ip)
 		// Step 3.2: Send Trustlet TCI Message
 		mcRet = tlc_communicate(&cp_ctx);
 		if (MC_DRV_OK != mcRet) {
-			LOG_E("Tlc Communicate Error");
+			
 			cp_result = CP_ERROR_DISABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -171,7 +171,7 @@ extern "C" cpResult_t CP_Disable_Path_Protection(uint32_t protect_ip)
 		// -------------------------------------------------------------
 		// Step 3.3: Verify that the Trustlet sent a response
 		if ((RSP_ID(CMD_WV_DRM_DISABLE_PATH_PROTECTION) != tci->resp.id)) {
-			LOG_E("Trustlet did not send a response: %d", tci->resp.id);
+			
 			cp_result = CP_ERROR_DISABLE_PATH_PROTECTION_FAILED;
 			break;
 		}
@@ -179,14 +179,14 @@ extern "C" cpResult_t CP_Disable_Path_Protection(uint32_t protect_ip)
 		// -------------------------------------------------------------
 		// Step 3.4: Check the Trustlet return code
 		if (tci->resp.return_code != RET_TL_WV_DRM_OK) {
-			LOG_E("Trustlet did not send a valid return code: %d", tci->resp.return_code);
+			
 			cp_result = CP_ERROR_DISABLE_PATH_PROTECTION_FAILED;
 			break;
 		}		
 	} while(0);
 
 	tlc_terminate();
-	LOG_I("[CONTENT_PROTECT] : CP_Disable_Path_Protection. return value(%d)", cp_result);
+	
 	return cp_result;
 }
 

@@ -173,16 +173,16 @@ void MobiCoreDevice::start(void)
     // Call the device specific initialization
     //  initDevice();
 
-    LOG_I("Starting DeviceIrqHandler...");
+    
     // Start the irq handling thread
     DeviceIrqHandler::start();
 
     if (schedulerAvailable()) {
-        LOG_I("Starting DeviceScheduler...");
+        
         // Start the scheduling handling thread
         DeviceScheduler::start();
     } else {
-        LOG_I("No DeviceScheduler available.");
+        
     }
 }
 
@@ -207,7 +207,7 @@ bool MobiCoreDevice::waitMcpNotification(void)
         if (mcpSessionNotification.wait(10) == false) {
             // No MCP answer received and mobicore halted, dump mobicore status
             // then throw exception
-            LOG_I("No MCP answer received in 2 seconds.");
+            
             if (getMobicoreStatus() == MC_STATUS_HALT) {
                 dumpMobicoreStatus();
                 mcFault = true;
@@ -226,18 +226,17 @@ bool MobiCoreDevice::waitMcpNotification(void)
 
     // Check healthiness state of the device
     if (DeviceIrqHandler::isExiting()) {
-        LOG_I("waitMcpNotification(): IrqHandler thread died! Joining");
+        
         DeviceIrqHandler::join();
-        LOG_I("waitMcpNotification(): Joined");
-        LOG_E("IrqHandler thread died!");
+        
+        
         return false;
     }
 
     if (DeviceScheduler::isExiting()) {
-        LOG_I("waitMcpNotification(): Scheduler thread died! Joining");
+        
         DeviceScheduler::join();
-        LOG_I("waitMcpNotification(): Joined");
-        LOG_E("Scheduler thread died!");
+	
         return false;
     }
     return true;
@@ -258,12 +257,12 @@ mcResult_t MobiCoreDevice::openSession(
         uint32_t handle = cmdOpenSession->handle;
 
         if (!findContiguousWsm(handle, &tci, &len)) {
-            LOG_E("Failed to find contiguous WSM %u", handle);
+            
             return MC_DRV_ERR_DAEMON_WSM_HANDLE_NOT_FOUND;
         }
 
         if (!lockWsmL2(handle)) {
-            LOG_E("Failed to lock contiguous WSM %u", handle);
+            
             return MC_DRV_ERR_DAEMON_WSM_HANDLE_NOT_FOUND;
         }
 
@@ -275,9 +274,9 @@ mcResult_t MobiCoreDevice::openSession(
         mcpMessage->cmdOpen.ofsTciBuffer = 0;
         mcpMessage->cmdOpen.lenTciBuffer = len;
 
-        LOG_I(" Using phys=%p, len=%d as TCI buffer",
-              (addr_t)(cmdOpenSession->tci),
-              cmdOpenSession->len);
+        
+        
+        
 
         // check if load data is provided
         mcpMessage->cmdOpen.wsmTypeLoadData = WSM_L2;
@@ -301,7 +300,7 @@ mcResult_t MobiCoreDevice::openSession(
 
         // Check if the command response ID is correct
         if ((MC_MCP_CMD_OPEN_SESSION | FLAG_RESPONSE) != mcpMessage->rspHeader.rspId) {
-            LOG_E("CMD_OPEN_SESSION got invalid MCP command response(0x%X)", mcpMessage->rspHeader.rspId);
+            
             // Something is messing with our MCI memory, we cannot know if the Trustlet was loaded.
             // Had in been loaded, we are loosing track of it here.
             unlockWsmL2(handle);
@@ -311,13 +310,13 @@ mcResult_t MobiCoreDevice::openSession(
         uint32_t mcRet = mcpMessage->rspOpen.rspHeader.result;
 
         if (mcRet != MC_MCP_RET_OK) {
-            LOG_E("MCP OPEN returned code %d.", mcRet);
+            
             unlockWsmL2(handle);
             return MAKE_MC_DRV_MCP_ERROR(mcRet);
         }
 
-        LOG_I(" After MCP OPEN, we have %d queued notifications",
-              notifications.size());
+        
+        
         // Read MC answer from MCP buffer
         TrustletSession *trustletSession = new TrustletSession(
             deviceConnection,
@@ -349,11 +348,8 @@ TrustletSession *MobiCoreDevice::registerTrustletConnection(
     MC_DRV_CMD_NQ_CONNECT_struct *cmdNqConnect
 )
 {
-    LOG_I(" Registering notification socket with Service session %d.",
-          cmdNqConnect->sessionId);
-    LOG_V("  Searching sessionId %d with sessionMagic %d",
-          cmdNqConnect->sessionId,
-          cmdNqConnect->sessionMagic);
+    
+        
 
     for (trustletSessionIterator_t iterator = trustletSessions.begin();
             iterator != trustletSessions.end();
@@ -371,12 +367,12 @@ TrustletSession *MobiCoreDevice::registerTrustletConnection(
 
         ts->notificationConnection = connection;
 
-        LOG_I(" Found Service session, registered connection.");
+        
 
         return ts;
     }
 
-    LOG_I("registerTrustletConnection(): search failed");
+    
     return NULL;
 }
 
@@ -384,7 +380,7 @@ TrustletSession *MobiCoreDevice::registerTrustletConnection(
 //------------------------------------------------------------------------------
 mcResult_t MobiCoreDevice::closeSession(uint32_t sessionId)
 {
-    LOG_I(" Write MCP CLOSE message to MCI, notify and wait");
+    
 
     // Write MCP close message to buffer
     mcpMessage->cmdClose.cmdHeader.cmdId = MC_MCP_CMD_CLOSE_SESSION;
@@ -400,7 +396,7 @@ mcResult_t MobiCoreDevice::closeSession(uint32_t sessionId)
 
     // Check if the command response ID is correct
     if ((MC_MCP_CMD_CLOSE_SESSION | FLAG_RESPONSE) != mcpMessage->rspHeader.rspId) {
-        LOG_E("CMD_CLOSE_SESSION got invalid MCP response");
+        
         return MC_DRV_ERR_DAEMON_MCI_ERROR;
     }
 
@@ -408,7 +404,7 @@ mcResult_t MobiCoreDevice::closeSession(uint32_t sessionId)
     uint32_t mcRet = mcpMessage->rspOpen.rspHeader.result;
 
     if (mcRet != MC_MCP_RET_OK) {
-        LOG_E("CMD_CLOSE_SESSION error %d", mcRet);
+        
         return MAKE_MC_DRV_MCP_ERROR(mcRet);
     }
 
@@ -427,7 +423,7 @@ mcResult_t MobiCoreDevice::closeSession(Connection *deviceConnection, uint32_t s
 {
     TrustletSession *ts = getTrustletSession(sessionId);
     if (ts == NULL) {
-        LOG_E("no session found with id=%d", sessionId);
+        
         return MC_DRV_ERR_DAEMON_UNKNOWN_SESSION;
     }
 
@@ -450,7 +446,7 @@ mcResult_t MobiCoreDevice::mapBulk(uint32_t sessionId, uint32_t handle, uint32_t
 {
     TrustletSession *ts = getTrustletSession(sessionId);
     if (ts == NULL) {
-        LOG_E("no session found with id=%d", sessionId);
+        
         return MC_DRV_ERR_DAEMON_UNKNOWN_SESSION;
     }
 
@@ -474,14 +470,14 @@ mcResult_t MobiCoreDevice::mapBulk(uint32_t sessionId, uint32_t handle, uint32_t
 
     // Check if the command response ID is correct
     if (mcpMessage->rspHeader.rspId != (MC_MCP_CMD_MAP | FLAG_RESPONSE)) {
-        LOG_E("CMD_MAP got invalid MCP response");
+        
         return MC_DRV_ERR_DAEMON_MCI_ERROR;
     }
 
     uint32_t mcRet = mcpMessage->rspMap.rspHeader.result;
 
     if (mcRet != MC_MCP_RET_OK) {
-        LOG_E("MCP MAP returned code %d.", mcRet);
+        
         return MAKE_MC_DRV_MCP_ERROR(mcRet);
     }
 
@@ -496,7 +492,7 @@ mcResult_t MobiCoreDevice::unmapBulk(uint32_t sessionId, uint32_t handle,
 {
     TrustletSession *ts = getTrustletSession(sessionId);
     if (ts == NULL) {
-        LOG_E("no session found with id=%d", sessionId);
+        
         return MC_DRV_ERR_DAEMON_UNKNOWN_SESSION;
     }
 
@@ -517,20 +513,20 @@ mcResult_t MobiCoreDevice::unmapBulk(uint32_t sessionId, uint32_t handle,
 
     // Check if the command response ID is correct
     if (mcpMessage->rspHeader.rspId != (MC_MCP_CMD_UNMAP | FLAG_RESPONSE)) {
-        LOG_E("CMD_OPEN_SESSION got invalid MCP response");
+        
         return MC_DRV_ERR_DAEMON_MCI_ERROR;
     }
 
     uint32_t mcRet = mcpMessage->rspUnmap.rspHeader.result;
 
     if (mcRet != MC_MCP_RET_OK) {
-        LOG_E("MCP UNMAP returned code %d.", mcRet);
+        
         return MAKE_MC_DRV_MCP_ERROR(mcRet);
     } else {
         // Just remove the buffer
         // TODO-2012-09-06-haenellu: Haven't we removed it already?
-        if (!ts->removeBulkBuff(handle))
-            LOG_I("unmapBulk(): no buffer found found with handle=%u", handle);
+
+            
     }
 
     return MC_DRV_OK;
@@ -543,7 +539,7 @@ void MobiCoreDevice::donateRam(const uint32_t donationSize)
     // Donate additional RAM to the MobiCore
     CWsm_ptr ram = allocateContiguousPersistentWsm(donationSize);
     if (NULL == ram) {
-        LOG_E("Allocation of additional RAM failed");
+        
         return;
     }
     ramType_t ramType = RAM_GENERIC;
@@ -551,10 +547,7 @@ void MobiCoreDevice::donateRam(const uint32_t donationSize)
     const uint32_t numPages = donationSize / (4 * 1024);
 
 
-    LOG_I("donateRam(): adrBuffer=%p, numPages=%d, ramType=%d",
-          adrBuffer,
-          numPages,
-          ramType);
+    
 
     do {
         // Write MCP open message to buffer
@@ -573,18 +566,17 @@ void MobiCoreDevice::donateRam(const uint32_t donationSize)
 
         // Check if the command response ID is correct
         if ((MC_MCP_CMD_DONATE_RAM | FLAG_RESPONSE) != mcpMessage->rspHeader.rspId) {
-            LOG_E("donateRam(): CMD_DONATE_RAM got invalid MCP response - rspId is: %d",
-                  mcpMessage->rspHeader.rspId);
+            
             break;
         }
 
         uint32_t mcRet = mcpMessage->rspDonateRam.rspHeader.result;
         if (MC_MCP_RET_OK != mcRet) {
-            LOG_E("donateRam(): CMD_DONATE_RAM error %d", mcRet);
+            
             break;
         }
 
-        LOG_I("donateRam() succeeded.");
+        
 
     } while (0);
 }
@@ -613,14 +605,14 @@ mcResult_t MobiCoreDevice::getMobiCoreVersion(
 
         // Check if the command response ID is correct
         if ((MC_MCP_CMD_GET_MOBICORE_VERSION | FLAG_RESPONSE) != mcpMessage->rspHeader.rspId) {
-            LOG_E("MC_MCP_CMD_GET_MOBICORE_VERSION got invalid MCP response");
+            
             return MC_DRV_ERR_DAEMON_MCI_ERROR;
         }
 
         uint32_t  mcRet = mcpMessage->rspGetMobiCoreVersion.rspHeader.result;
 
         if (mcRet != MC_MCP_RET_OK) {
-            LOG_E("MC_MCP_CMD_GET_MOBICORE_VERSION error %d", mcRet);
+            
             return MAKE_MC_DRV_MCP_ERROR(mcRet);
         }
 

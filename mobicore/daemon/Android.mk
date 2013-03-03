@@ -43,7 +43,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := mcDriverDaemon
 LOCAL_MODULE_TAGS := optional
-LOCAL_CFLAGS += -include buildTag.h
+LOCAL_CFLAGS += -include buildTag.h -Wno-type-limits
 LOCAL_CFLAGS += -DLOG_TAG=\"McDaemon\"
 LOCAL_C_INCLUDES += $(GLOBAL_INCLUDES)
 LOCAL_SHARED_LIBRARIES += $(GLOBAL_LIBRARIES)

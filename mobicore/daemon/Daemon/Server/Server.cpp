@@ -56,12 +56,12 @@ void Server::run(
 )
 {
     do {
-        LOG_I("Server: start listening on socket %s", socketAddr.c_str());
+        
 
         // Open a socket (a UNIX domain stream socket)
         serverSock = socket(AF_UNIX, SOCK_STREAM, 0);
         if (serverSock < 0) {
-            LOG_ERRNO("Can't open stream socket, because socket");
+            
             break;
         }
 
@@ -74,16 +74,16 @@ void Server::run(
         // Make the socket in the Abstract Domain(no path but everyone can connect)
         serverAddr.sun_path[0] = 0;
         if (bind(serverSock, (struct sockaddr *) &serverAddr, len) < 0) {
-            LOG_ERRNO("Binding to server socket failed, because bind");
+            
         }
 
         // Start listening on the socket
         if (listen(serverSock, LISTEN_QUEUE_LEN) < 0) {
-            LOG_ERRNO("listen");
+            
             break;
         }
 
-        LOG_I("\n********* successfully initialized Daemon *********\n");
+        
 
         for (;;) {
             fd_set fdReadSockets;
@@ -109,7 +109,7 @@ void Server::run(
 
             // Wait for activities, select() returns the number of sockets
             // which require processing
-            LOG_V(" Server: waiting on sockets");
+            
             int numSockets = select(
                                  maxSocketDescriptor + 1,
                                  &fdReadSockets,
@@ -117,22 +117,22 @@ void Server::run(
 
             // Check if select failed
             if (numSockets < 0) {
-                LOG_ERRNO("select");
+               
                 break;
             }
 
             // actually, this should not happen.
             if (0 == numSockets) {
-                LOG_W(" Server: select() returned 0, spurious event?.");
+               
                 continue;
             }
 
-            LOG_V(" Server: events on %d socket(s).", numSockets);
+           
 
             // Check if a new client connected to the server socket
             if (FD_ISSET(serverSock, &fdReadSockets)) {
                 do {
-                    LOG_V(" Server: new connection attempt.");
+                    
                     numSockets--;
 
                     struct sockaddr_un clientAddr;
@@ -143,13 +143,13 @@ void Server::run(
                                          &clientSockLen);
 
                     if (clientSock <= 0) {
-                        LOG_ERRNO("accept");
+                        
                         break;
                     }
 
                     Connection *connection = new Connection(clientSock, &clientAddr);
                     peerConnections.push_back(connection);
-                    LOG_I(" Server: new socket connection established and start listening.");
+                    
                 } while (false);
 
                 // we can ignore any errors from accepting a new connection.
@@ -174,7 +174,7 @@ void Server::run(
                 // the connection will be terminated if command processing
                 // fails
                 if (!connectionHandler->handleConnection(connection)) {
-                    LOG_I(" Server: dropping connection.");
+                    
 
                     //Inform the driver
                     connectionHandler->dropConnection(connection);
@@ -191,7 +191,7 @@ void Server::run(
 
     } while (false);
 
-    LOG_ERRNO("Exiting Server, because");
+    
 }
 
 
@@ -200,7 +200,7 @@ void Server::detachConnection(
     Connection *connection
 )
 {
-    LOG_V(" Stopping to listen on notification socket.");
+    
 
     for (connectionIterator_t iterator = peerConnections.begin();
             iterator != peerConnections.end();
@@ -208,7 +208,7 @@ void Server::detachConnection(
         Connection *tmpConnection = (*iterator);
         if (tmpConnection == connection) {
             peerConnections.erase(iterator);
-            LOG_I(" Stopped listening on notification socket.");
+            
             break;
         }
     }
